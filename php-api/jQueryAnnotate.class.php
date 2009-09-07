@@ -59,7 +59,8 @@ class jQueryAnnotate {
 			"id_".md5($_GET["text"]),
 			"true"
 		);
-
+		
+		$this->delete($data); // Delete previous entry
 		if($data[4] && file_put_contents( $this->filename, implode("\t",$data)."\n", FILE_APPEND | LOCK_EX ))
 			echo '{ "annotation_id": "id_'.md5($_GET["text"]).'" }';
 	}
@@ -71,23 +72,31 @@ class jQueryAnnotate {
 	 * @access public
 	 * @return void
 	 */
-	function delete() {
-		$to_delete = array(
-			$_GET["top"],
-			$_GET["left"],
-			$_GET["width"],
-			$_GET["height"],
-			$_GET["text"],
-			$_GET["id"],
-		);
+	function delete($to_delete_old = null) {
+		if(!$to_delete_old)
+			$to_delete = array(
+				$_GET["top"],
+				$_GET["left"],
+				$_GET["width"],
+				$_GET["height"],
+				$_GET["text"],
+				$_GET["id"]
+			);
 
 		$items = $this->items;
 		$i = 0;
 		foreach($items as $item) {
 			if($item) {
 				$item = explode("\t", $item);
-				if(($item[5] == $to_delete[5]) && ($item[6] == "true\n"))
-					unset($items[$i]);
+				if( !$to_delete_old ) {
+					if( ($item[5] == $to_delete[5]) && ($item[6] == "true\n") )
+						unset($items[$i]);
+				}
+				else {
+					// If top and left exist already, than delete them due to exclude clones
+					if( ($item[0] == $to_delete_old[0]) && ($item[1] == $to_delete_old[1]) && ($item[6] == "true\n") ) 
+						unset($items[$i]);
+				}
 			}
 			$i++;
 		}
